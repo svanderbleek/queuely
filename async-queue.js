@@ -2,36 +2,42 @@ const DB = require('db');
 const Queue = require('db');
 const Events = require('events');
 
-module.exports = class AsyncQueue {
+module.exports = class AsyncQueue extends Events {
   constructor() {
     this.queue = new Queue(new DB());
     this.timeouts = {};
-    this.events = new Events();
-    this.events.on('enqueue', enqeue);
-    this.events.on('dequeue', deqeue);
-    this.events.on('processed', enqeue);
-    this.events.on('timeout', timeout);
+    this.on('enqueue', enqeue);
+    this.on('dequeue', deqeue);
+    this.on('processed', enqeue);
+    this.on('timeout', timeout);
   }
 
-  enqueue(message) {
-    this.queue.enqueue(message);
+  enqueue(response, body) {
+    const id = this.queue.enqueue(message);
+    response.write(JSON.stringify(id));
+    response.end();
   }
 
-  dequeue() {
+  dequeue(response) {
     messages = this.queue.dequeue();
     messages.forEach((message) => {
-      timouts[message.id] = setTimeout(() => this.events.emit('timout'));
+      timeouts[message.id] = setTimeout(function() {
+        this.clearTimeout(message);
+        this.queue.timeout(message);
+      });
     });
-    return messages;
+    response.write(JSON.stringify(messages));
+    response.end();
   }
 
   processed(message) {
-    clearTimeout(this.timeout[message.id]);
-    delete this.timeouts[message.id];
+    this.clearTimeout(message);
     this.queue.processed(message);
+    response.end();
   }
 
-  timeout(message) {
-    this.queue.timeout(message);
+  clearTimeout(message) {
+    clearTimeout(this.timeout[message.id]);
+    delete this.timeouts[message.id];
   }
 };
