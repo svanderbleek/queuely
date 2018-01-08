@@ -22,6 +22,6 @@ module.exports = class Database {
   }
 
   query(predicate) {
-    return Object.values(store).filter(predicate);
+    return Object.values(this.store).filter(predicate);
   }
 };
